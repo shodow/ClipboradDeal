@@ -5,19 +5,30 @@
 #include <QPainter>
 #include <QMouseEvent>
 #include <QDebug>
+#include <QRandomGenerator>
 
+#define MODIFY
 static const QString EXIT = "Exit";
+static const QString DEBUG = "Debug";
+static const QString RELEASE = "Release";
+static const QString VERSION = "FuckImg_v1.1";
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
     , preText("")
     , pos(TOPLEFT)
+    , m_isDebug(false)
 {
     ui->setupUi(this);
 
     // 设置托盘图标菜单
     menu = new QMenu();
+    // debug按钮
+    QAction *pdebug = menu->addAction(DEBUG);
+    pdebug->setCheckable(true);
+    pdebug->setChecked(false);
+    // 退出按钮
     menu->addAction(EXIT);
     connect(menu, &QMenu::triggered, this, &MainWindow::on_systemTrayIcon_Menu_Click);
 
@@ -25,11 +36,11 @@ MainWindow::MainWindow(QWidget *parent)
     QIcon icon(":/resource/logo.png");
     systemTrayIcon = new QSystemTrayIcon(icon);
     systemTrayIcon->setContextMenu(menu);
-    systemTrayIcon->setToolTip("FuckImg");
+    systemTrayIcon->setToolTip(VERSION);
     systemTrayIcon->show();
 
     // 设置窗口属性
-    setWindowTitle("fuckImg"); // 窗口名
+    setWindowTitle(VERSION); // 窗口名
     setWindowFlags(Qt::FramelessWindowHint); // 窗口不显示标题栏
 
     clipboard = QGuiApplication::clipboard(); // 创建系统剪切板对象
@@ -53,9 +64,9 @@ void MainWindow::on_clipboard_update()
         // 图片数据，进行加工处理，改变数据的md5值
         QPixmap img = qvariant_cast<QPixmap>(mimeData->imageData());
         if (preImage.cacheKey() == img.cacheKey()) return;
-        //img.save("d://bad.png");
+        if (m_isDebug) img.save(QString("d://1_%1.png").arg(img.cacheKey()));
         dealPix(img);
-        //img.save("d://good.png");
+        if (m_isDebug) img.save(QString("d://2_%1.png").arg(img.cacheKey()));
         preImage = img;
         clipboard->setPixmap(img);
     }
@@ -63,7 +74,8 @@ void MainWindow::on_clipboard_update()
 
 void MainWindow::dealPix(QPixmap &pm){
     QPainter painter(&pm);
-#ifdef WATERLOGO
+
+#if defined WATERLOGO
     int fontSize = 8;
     if (pm.width() < 520) fontSize = 4;
     if (pm.width() < 290) fontSize = 2;
@@ -99,10 +111,52 @@ void MainWindow::dealPix(QPixmap &pm){
             break;
         }
     }
-#else
-    // 图片点一个比较透明的黑点
-    painter.setPen(QColor(0, 0, 0, 10));
+#elif defined EXIF
+    // 修改图片EXIF信息
+    pm.data_ptr();
+
+#elif defined POINT
+    int width = pm.width(); // 图像宽
+    int height = pm.height(); // 图像高
+
+    // 图片(0,0)点一个黑点
+    painter.setPen(QColor(0, 0, 0));
     painter.drawPoint(QPoint(0, 0));
+
+    // 图片点一个白点
+    painter.setPen(QColor(255, 255, 255));
+    painter.drawPoint(QPoint(width-1, 0));
+
+    // 图片点一个红点
+    painter.setPen(QColor(255, 0, 0));
+    painter.drawPoint(QPoint(0, height-1));
+
+    // 图片点一个蓝点
+    painter.setPen(QColor(0, 0, 255));
+    painter.drawPoint(QPoint(width-1, height-1));
+
+    // 图片点一个绿点
+    painter.setPen(QColor(0, 255, 0));
+    painter.drawPoint(QPoint(width/2, height/2));
+
+#elif defined MODIFY
+    int width = pm.width(); // 图像宽
+    int height = pm.height(); // 图像高
+
+    // 获取图像宽高以内的一个随机点（x,y）
+    int x = QRandomGenerator::global()->bounded(width);
+    int y = QRandomGenerator::global()->bounded(height);
+
+    // 获取xy点处的像素点的rgb值并加10，大于244的设置为244
+    QImage image = pm.toImage();//将像素图转换为QImage
+    QColor color = image.pixel(x, y);
+    int r = color.red() > 244 ? 244 : (color.red() + 10);
+    int g = color.green() > 244 ? 244 : (color.green() + 10);
+    int b = color.blue() > 244 ? 244 : (color.blue() + 10);
+
+    // 将处理后的rgb值画在原来的位置上
+    painter.setPen(QColor(r, g, b));
+    painter.drawPoint(QPoint(x, y));
 #endif
 }
 
@@ -112,5 +166,9 @@ void MainWindow::on_systemTrayIcon_Menu_Click(QAction *action)
     if (text == EXIT)
     {
         close();
+    }
+    else if (DEBUG == text)
+    {
+        m_isDebug = action->isChecked();
     }
 }

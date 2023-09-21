@@ -42,5 +42,6 @@ private:
 
     QSystemTrayIcon *systemTrayIcon;
     QMenu *menu;
+    bool m_isDebug;
 };
 #endif // MAINWINDOW_H
