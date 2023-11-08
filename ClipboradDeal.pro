@@ -16,12 +16,17 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    lcDealImg.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    workthread.cpp
 
 HEADERS += \
     aaa.h \
-    mainwindow.h
+    lcDealImg.h \
+    lcLog.h \
+    mainwindow.h \
+    workthread.h
 
 FORMS += \
     mainwindow.ui

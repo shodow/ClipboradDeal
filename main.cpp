@@ -3,6 +3,7 @@
 #include <QApplication>
 #include <QSharedMemory>
 #include <QMessageBox>
+#include <QTextCodec>
 
 int main(int argc, char *argv[])
 {
@@ -15,6 +16,9 @@ int main(int argc, char *argv[])
         return 0;
     }
     shared.create(1);
+
+    QTextCodec *codec = QTextCodec::codecForName("utf-8");
+    QTextCodec::setCodecForLocale(codec);
 
     MainWindow w;
     //w.show();
